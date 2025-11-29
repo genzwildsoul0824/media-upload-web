@@ -40,6 +40,7 @@ class ApiService {
         'Content-Type': 'multipart/form-data'
       }
     })
+
     return response.data
   }
 
