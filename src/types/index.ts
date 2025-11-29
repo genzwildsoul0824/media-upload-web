@@ -6,12 +6,14 @@ export interface FileMetadata {
   mimeType: string
   totalChunks: number
   uploadedChunks: number[]
-  status: 'pending' | 'uploading' | 'paused' | 'completed' | 'error' | 'cancelled'
+  status: 'pending' | 'uploading' | 'paused' | 'finalizing' | 'completed' | 'error' | 'cancelled'
   progress: number
   uploadId?: string
   error?: string
   startTime: number
   endTime?: number
+  pausedAt?: number // Timestamp when file was paused
+  pausedDuration: number // Total cumulative paused time in milliseconds
   preview?: string
 }
 

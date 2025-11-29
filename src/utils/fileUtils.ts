@@ -52,17 +52,12 @@ export function generateFilePreview(file: File): Promise<string> {
       return
     }
 
-    const reader = new FileReader()
-
-    reader.onload = (e) => {
-      resolve(e.target?.result as string)
+    try {
+      const url = URL.createObjectURL(file)
+      resolve(url)
+    } catch (error) {
+      reject(error as Error)
     }
-
-    reader.onerror = () => {
-      reject(new Error('Failed to read file'))
-    }
-
-    reader.readAsDataURL(file)
   })
 }
 
