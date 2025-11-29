@@ -254,6 +254,18 @@ Ensure the backend has proper CORS headers configured for your frontend domain.
 3. Clear browser cache
 4. Check backend server resources
 
+## Future Improvements
+
+### Testing
+- Add unit tests for uploadService
+- Add unit tests for uploadQueueManager
+- Add component tests with React Testing Library
+- Add E2E tests for upload flow
+- Add tests for pause/resume functionality
+- Add tests for error handling scenarios
+- Add tests for retry logic
+- Increase test coverage to >80%
+
 ## Contributing
 
 1. Fork the repository

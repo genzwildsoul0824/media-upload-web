@@ -38,9 +38,10 @@ class ApiService {
     const response = await this.client.post('/upload/chunk', formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
-      }
+      },
+      timeout: 300
     })
-
+    
     return response.data
   }
 
