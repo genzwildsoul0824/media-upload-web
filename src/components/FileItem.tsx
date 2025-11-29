@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Play, Pause, X, RotateCw, CheckCircle, AlertCircle, Image, Video } from 'lucide-react'
 import { useUploadStore } from '../store/uploadStore'
-import { uploadService } from '../services/uploadService'
+import { uploadQueueManager } from '../services/uploadQueueManager'
 import { formatFileSize, formatDuration } from '../utils/fileUtils'
 import styles from './FileItem.module.css'
 import type { FileMetadata } from '../types'
@@ -16,88 +16,43 @@ export function FileItem({ file }: Props) {
 
   useEffect(() => {
     if (file.status === 'uploading') {
+      // Calculate initial elapsed time immediately
+      const pausedDuration = file.pausedDuration || 0
+      setElapsedTime(Date.now() - file.startTime - pausedDuration)
+      
+      // Then update every second
       const interval = setInterval(() => {
-        setElapsedTime(Date.now() - file.startTime)
+        const pausedDuration = file.pausedDuration || 0
+        setElapsedTime(Date.now() - file.startTime - pausedDuration)
       }, 1000)
       return () => clearInterval(interval)
+    } else if (file.status === 'paused' && file.endTime) {
+      // Show paused duration when paused
+      const pausedDuration = file.pausedDuration || 0
+      setElapsedTime(file.endTime - file.startTime - pausedDuration)
+    } else {
+      // Reset elapsed time when not uploading or paused
+      setElapsedTime(0)
     }
-  }, [file.status, file.startTime])
+  }, [file.status, file.startTime, file.pausedDuration, file.endTime])
 
-  const handleStart = async () => {
-    updateFile(file.id, { status: 'uploading', error: undefined })
-
-    await uploadService.uploadFile(
-      file,
-      (progress, uploadedChunks) => {
-        updateFile(file.id, { progress, uploadedChunks })
-      },
-      (error) => {
-        updateFile(file.id, { status: 'error', error, endTime: Date.now() })
-        addToHistory({
-          id: file.id,
-          filename: file.filename,
-          size: file.size,
-          mimeType: file.mimeType,
-          status: 'failed',
-          timestamp: Date.now(),
-          duration: Date.now() - file.startTime
-        })
-      },
-      () => {
-        const endTime = Date.now()
-        updateFile(file.id, { status: 'completed', progress: 100, endTime })
-        addToHistory({
-          id: file.id,
-          filename: file.filename,
-          size: file.size,
-          mimeType: file.mimeType,
-          status: 'completed',
-          timestamp: endTime,
-          duration: endTime - file.startTime
-        })
-      }
-    )
+  const handleStart = () => {
+    // Resume upload through queue manager
+    uploadQueueManager.resumeUpload(file)
   }
 
   const handlePause = () => {
-    uploadService.pauseUpload(file.id)
-    updateFile(file.id, { status: 'paused' })
+    uploadQueueManager.pauseUpload(file.id)
+    // Status will be updated by queue manager after pause completes
   }
 
-  const handleResume = async () => {
-    try {
-      updateFile(file.id, { status: 'uploading', error: undefined })
-      
-      // Resume from where we left off
-      await uploadService.uploadFile(
-        file,
-        (progress, uploadedChunks) => {
-          updateFile(file.id, { progress, uploadedChunks })
-        },
-        (error) => {
-          updateFile(file.id, { status: 'error', error, endTime: Date.now() })
-        },
-        () => {
-          const endTime = Date.now()
-          updateFile(file.id, { status: 'completed', progress: 100, endTime })
-          addToHistory({
-            id: file.id,
-            filename: file.filename,
-            size: file.size,
-            mimeType: file.mimeType,
-            status: 'completed',
-            timestamp: endTime,
-            duration: endTime - file.startTime
-          })
-        }
-      )
-    } catch (error: any) {
-      updateFile(file.id, { status: 'error', error: error.message })
-    }
+  const handleResume = () => {
+    // Resume upload through queue manager
+    uploadQueueManager.resumeUpload(file)
   }
 
   const handleCancel = () => {
-    uploadService.cancelUpload(file.id, file.uploadId)
+    uploadQueueManager.cancelUpload(file.id, file.uploadId)
     removeFile(file.id)
   }
 
@@ -107,9 +62,13 @@ export function FileItem({ file }: Props) {
       progress: 0, 
       uploadedChunks: [], 
       error: undefined,
-      startTime: Date.now()
+      startTime: Date.now(),
+      pausedDuration: 0,
+      pausedAt: undefined,
+      endTime: undefined
     })
-    handleStart()
+    // Add to queue for retry
+    uploadQueueManager.resumeUpload(file)
   }
 
   const getStatusIcon = () => {
@@ -119,6 +78,7 @@ export function FileItem({ file }: Props) {
       case 'error':
         return <AlertCircle size={20} className={styles.iconError} />
       case 'uploading':
+      case 'finalizing':
         return <div className={styles.spinner} />
       default:
         return file.mimeType.startsWith('image/') ? <Image size={20} /> : <Video size={20} />
@@ -146,15 +106,28 @@ export function FileItem({ file }: Props) {
           {file.status === 'uploading' && (
             <span className={styles.time}>{formatDuration(elapsedTime)}</span>
           )}
-          {file.endTime && (
-            <span className={styles.time}>{formatDuration(file.endTime - file.startTime)}</span>
+          {file.status === 'finalizing' && (
+            <span className={styles.time} style={{ color: 'var(--primary)', fontWeight: 500 }}>
+              Finalizing...
+            </span>
+          )}
+          {(file.status === 'paused' || file.status === 'completed' || file.status === 'error') && file.endTime && (
+            <span className={styles.time}>
+              {formatDuration(Math.max(0, file.endTime - file.startTime - (file.pausedDuration || 0)))}
+            </span>
           )}
         </div>
 
         {file.status !== 'completed' && (
           <div className={styles.progressBar}>
             <div className={styles.progressFill} style={{ width: `${file.progress}%` }} />
-            <span className={styles.progressText}>{Math.round(file.progress)}%</span>
+            <span className={styles.progressText}>
+              {file.status === 'finalizing' ? (
+                <span style={{ fontWeight: 'bold', color: 'var(--primary)' }}>Finalizing...</span>
+              ) : (
+                `${Math.round(file.progress)}%`
+              )}
+            </span>
           </div>
         )}
 

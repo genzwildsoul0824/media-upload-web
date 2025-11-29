@@ -17,27 +17,33 @@ function App() {
         <p>Upload images and videos with advanced chunked transfer</p>
       </header>
 
-      <nav className={styles.nav}>
+      <nav className={styles.tabs}>
         <button
-          className={`${styles.navButton} ${activeTab === 'upload' ? styles.active : ''}`}
+          className={`${styles.tab} ${activeTab === 'upload' ? styles.active : ''}`}
           onClick={() => setActiveTab('upload')}
+          aria-selected={activeTab === 'upload'}
+          role="tab"
         >
-          <Upload size={20} />
-          Upload
+          <Upload size={18} />
+          <span>New Upload</span>
         </button>
         <button
-          className={`${styles.navButton} ${activeTab === 'history' ? styles.active : ''}`}
+          className={`${styles.tab} ${activeTab === 'history' ? styles.active : ''}`}
           onClick={() => setActiveTab('history')}
+          aria-selected={activeTab === 'history'}
+          role="tab"
         >
-          <History size={20} />
-          History
+          <History size={18} />
+          <span>History</span>
         </button>
         <button
-          className={`${styles.navButton} ${activeTab === 'monitoring' ? styles.active : ''}`}
+          className={`${styles.tab} ${activeTab === 'monitoring' ? styles.active : ''}`}
           onClick={() => setActiveTab('monitoring')}
+          aria-selected={activeTab === 'monitoring'}
+          role="tab"
         >
-          <Activity size={20} />
-          Monitoring
+          <Activity size={18} />
+          <span>Monitoring</span>
         </button>
       </nav>
 

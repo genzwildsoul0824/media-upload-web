@@ -23,36 +23,66 @@
   opacity: 0.9;
 }
 
-.nav {
+.tabs {
   display: flex;
-  gap: 0.5rem;
-  padding: 1rem;
   background: var(--surface);
-  border-bottom: 1px solid var(--border);
-  justify-content: center;
+  border-bottom: 2px solid var(--border);
+  padding: 0;
+  margin: 0;
+  position: relative;
+  overflow-x: auto;
 }
 
-.navButton {
+.tabs::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--border);
+  z-index: 0;
+}
+
+.tab {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.75rem 1.5rem;
+  padding: 1rem 1.5rem;
   background: transparent;
   color: var(--text-secondary);
-  border-radius: 8px;
-  font-size: 1rem;
+  border: none;
+  border-bottom: 3px solid transparent;
+  font-size: 0.95rem;
   font-weight: 500;
+  cursor: pointer;
   transition: all 0.2s ease;
+  position: relative;
+  z-index: 1;
+  white-space: nowrap;
+  border-radius: 0;
+  margin-bottom: -2px;
 }
 
-.navButton:hover {
-  background: var(--background);
+.tab:hover {
   color: var(--text);
+  background: var(--background);
 }
 
-.navButton.active {
-  background: var(--primary);
-  color: white;
+.tab.active {
+  color: var(--primary);
+  border-bottom-color: var(--primary);
+  background: transparent;
+  font-weight: 600;
+}
+
+.tab.active:hover {
+  color: var(--primary);
+  background: transparent;
+}
+
+.tab span {
+  display: inline-block;
 }
 
 .main {
@@ -81,13 +111,16 @@
     font-size: 0.875rem;
   }
 
-  .nav {
-    flex-direction: column;
-    padding: 0.5rem;
+  .tabs {
+    flex-wrap: wrap;
   }
 
-  .navButton {
+  .tab {
+    flex: 1;
+    min-width: 120px;
     justify-content: center;
+    padding: 0.875rem 1rem;
+    font-size: 0.875rem;
   }
 
   .main {

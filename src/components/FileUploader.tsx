@@ -1,8 +1,9 @@
-import { useState, useCallback } from 'react'
+import React, { useState, useCallback, useEffect } from 'react'
 import { useDropzone } from 'react-dropzone'
 import { Upload, AlertCircle } from 'lucide-react'
 import { useUploadStore } from '../store/uploadStore'
 import { validateFile, generateFilePreview } from '../utils/fileUtils'
+import { uploadQueueManager } from '../services/uploadQueueManager'
 import { FileList } from './FileList'
 import styles from './FileUploader.module.css'
 import type { FileMetadata } from '../types'
@@ -11,8 +12,13 @@ const CHUNK_SIZE = 1024 * 1024 // 1MB
 const MAX_FILES = 10
 
 export function FileUploader() {
-  const { files, addFiles } = useUploadStore()
+  const { files, addFiles, updateFile, addToHistory } = useUploadStore()
   const [error, setError] = useState<string | null>(null)
+
+  // Set up callbacks for the queue manager
+  useEffect(() => {
+    uploadQueueManager.setCallbacks(updateFile, addToHistory)
+  }, [updateFile, addToHistory])
 
   const onDrop = useCallback(
     async (acceptedFiles: File[]) => {
@@ -63,6 +69,7 @@ export function FileUploader() {
           status: 'pending',
           progress: 0,
           startTime: Date.now(),
+          pausedDuration: 0,
           preview
         }
 
@@ -70,6 +77,9 @@ export function FileUploader() {
       }
 
       addFiles(fileMetadataList)
+      
+      // Automatically start uploads with queue management
+      uploadQueueManager.addToQueue(fileMetadataList)
     },
     [files.length, addFiles]
   )

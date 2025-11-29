@@ -99,9 +99,13 @@ export function MonitoringDashboard() {
             <h3>Success Rate</h3>
           </div>
           <div className={styles.cardContent}>
-            <div className={styles.bigNumber}>{stats.metrics.success_rate.toFixed(1)}%</div>
+            <div className={styles.bigNumber}>
+              {stats.metrics && typeof stats.metrics.total_uploads === 'number' && stats.metrics.total_uploads > 0
+                ? `${Number(stats.metrics.success_rate || 0).toFixed(1)}%`
+                : '0.0%'}
+            </div>
             <span className={styles.label}>
-              {stats.metrics.successful_uploads} / {stats.metrics.total_uploads} uploads
+              {stats.metrics?.successful_uploads ?? 0} / {stats.metrics?.total_uploads ?? 0} uploads
             </span>
           </div>
         </div>
@@ -112,7 +116,9 @@ export function MonitoringDashboard() {
             <h3>Total Uploads</h3>
           </div>
           <div className={styles.cardContent}>
-            <div className={styles.bigNumber}>{stats.metrics.total_uploads.toLocaleString()}</div>
+            <div className={styles.bigNumber}>
+              {Number(stats.metrics?.total_uploads ?? 0).toLocaleString()}
+            </div>
             <span className={styles.label}>All time</span>
           </div>
         </div>
